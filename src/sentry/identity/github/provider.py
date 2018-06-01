@@ -18,7 +18,14 @@ def get_user_info(access_token):
     return resp
 
 
+# Github has 2 types of apps -- Github apps and OAuth apps. SSO is implemented
+# using OAuth App, but signup and integrations use the github app. When github
+# apps have API parity with OAuth apps, we should move SSO to it as well.
+# https://developer.github.com/apps/differences-between-apps/
+
+
 class GitHubIdentityProvider(OAuth2Provider):
+    # `key` goes into the db so you can't just change it.
     key = 'github'
     name = 'GitHub'
 
@@ -41,6 +48,9 @@ class GitHubIdentityProvider(OAuth2Provider):
             'type': 'github',
             'id': user['id'],
             'email': user['email'],
+            'login': user['login'],
+            'name': user['name'],
+            'company': user['company'],
             'scopes': [],  # GitHub apps do not have user scopes
             'data': self.get_oauth_data(data),
         }

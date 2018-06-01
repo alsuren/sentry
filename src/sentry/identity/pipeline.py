@@ -2,14 +2,11 @@ from __future__ import absolute_import, print_function
 
 import logging
 
-from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
+from sentry.models import IdentityProvider
 from sentry.pipeline import Pipeline
-from sentry.models import Identity, IdentityStatus, IdentityProvider
 
 from . import default_manager
 
@@ -32,32 +29,7 @@ class IdentityProviderPipeline(Pipeline):
         return self.config.get('redirect_url', associate_url)
 
     def finish_pipeline(self):
-        identity = self.provider.build_identity(self.state.data)
-
-        defaults = {
-            'status': IdentityStatus.VALID,
-            'scopes': identity.get('scopes', []),
-            'data': identity.get('data', {}),
-            'date_verified': timezone.now(),
-        }
-
-        identity, created = Identity.objects.get_or_create(
-            idp=self.provider_model,
-            user=self.request.user,
-            external_id=identity['id'],
-            defaults=defaults,
-        )
-
-        if not created:
-            identity.update(**defaults)
-
-        messages.add_message(self.request, messages.SUCCESS, IDENTITY_LINKED.format(
-            identity_provider=self.provider.name,
-        ))
-
+        """Returns a dictionary containing identity information obtained from the OAuth flow."""
+        id_dict = self.provider.build_identity(self.state.data)
         self.state.clear()
-
-        # TODO(epurkhiser): When we have more identities and have built out an
-        # identity management page that supports these new identities (not
-        # social-auth ones), redirect to the identities page.
-        return HttpResponseRedirect(reverse('sentry-account-settings'))
+        return id_dict
