@@ -84,7 +84,8 @@ class GitHubAppsClient(GitHubClientMixin):
         )
 
     def get_repositories(self):
-        return self.get(
+        repositories = self.get(
             '/installation/repositories',
             params={'per_page': 100},
         )
+        return repositories['repositories']
